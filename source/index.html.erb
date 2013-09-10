@@ -1,0 +1,5 @@
+<p>This blog is about functional databases. Mostly Datomic, since that's the only functional database nowadays.</p>
+
+<% @posts.each do |post| %>
+  <p><a href="<%= post.url %>"><%= post.title %></a> (<%= post.display_date %>)</p>
+<% end %>

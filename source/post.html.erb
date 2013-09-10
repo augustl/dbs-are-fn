@@ -1,0 +1,12 @@
+<% post.reload! %>
+<% content_for(:title, post.title) %>
+
+<div id="article" class="article">
+  <h1 class="post-title"><%= post.title %></h1>
+  <p class="post-timestamp">Published <%= post.display_date %></p>
+  <%= post.body %>
+
+  <hr class="post-sep">
+
+  <p>This blog is written by <a href="http://augustl.com">August Lilleaas</a>. Questions? Comments? Contact me on (<a href="http://twitter.com/augustl">@augustl</a>) or e-mail (<a href="mailto:august@augustl.com">august@augustl.com</a>).</p>
+</div>

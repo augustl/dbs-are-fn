@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <% if yield_content(:title).blank? %>
+      <title>DB's are fn!</title>
+    <% else %>
+      <title><%= Sanitize.clean(yield_content(:title)) %> (DB's are fn!)</title>
+    <% end %>
+    <%= stylesheet_link_tag "screen" %>
+  </head>
+  <body>
+    <div class="header-block">
+      <p><a href="/" class="large-header-title-text">DB's are fn</a> &mdash; a blog about functional databases</p>
+    </div>
+    <div class="content-block">
+      <%= yield %>
+    </div>
+  </body>
+</html>
