@@ -42,6 +42,12 @@ hr.post-sep {
     margin-bottom: 40px;
 }
 
+.originally-published {
+    padding: 1em;
+    color: #666;
+    font-style: italic;
+}
+
 pre, code {
     font-family: "Inconsolata", "Monaco", "Lucida Console", monospace;
 }

@@ -1,0 +1,61 @@
+date: 2013.09.12
+title: Datomic: Direct index lookup
+
+<p class="originally-published">Originally published 07/17/2013, at <a href="http://augustl.com/blog/2013/datomic_direct_index_lookup/">my personal blog</a>. Edited and optimized.</p>
+
+<p>A couple of years ago, I read about someone whose MySQL performance bottleneck was SQL parsing. Most of the queries were straightforward primary key lookups, so the author wrote code that called InnoDB (one of MySQL's storage engines) directly and removed the bottleneck. I thought this was really cool, and I feel like I've reached a small milestone today for doing the same thing myself, only in Datomic.</p>
+
+<p>What can we do when we're in a simluar situation in Datomic? Wen the limiting factor is the speed of the query engine, and the query is a pretty simple lookup?</p>
+
+<p>The answer is: Direct index lookup.</p>
+
+<h2>Looking up data without datalog queries</h2>
+
+<p>Here's an example Datalog query that looks up a bunch of products based on a UUID field that our entities have. Read <a href="http://augustl.com/blog/2013/find_by_id_in_datomic/">Finding by ID in Datomic</a> to read more about why we have such a UUID field, instead of just using Datomic's entity IDs.</p>
+
+<pre><code data-lang="clojure">(require '[datomic.api :as d])
+
+(map
+  (fn [public-id]
+    (->> public-id
+      (d/q '[:find ?product
+             :in $ ?pub-id
+             :where
+             [?product :product/public-id ?pub-id]]
+           db)
+      (ffirst)
+      (d/entity db)))
+  public-ids)</code></pre>
+
+<p>The attribute <code data-lang="clojure">:product/public-id</code> is indexed, and unique. In some cases, the list of <code data-lang="clojure">public-ids</code> contains thousands of entries. So we end up running thousands of Datalog queries. This can some times take almost half a second - not optimal.</p>
+
+<p>Instead, we can look it up directly in the index.</p>
+
+<pre><code data-lang="clojure">;; Yields exactly the same output as the above query
+(map
+  (fn [public-id]
+    (d/entity db (:e (first (d/datoms db :avet :attendant/public-id public-id)))))
+  public-ids)
+</code></pre>
+
+<p>Datomic has multiple indexes, and all of them are full copies of the data. So looking things up in an index is the only thing you need to do in order to access the data, and this is what the Datomic query engine does under the hood anyway, since all your data in the database is available to you as an immutable (and lazy) value.</p>
+
+<p>The code to <code data-lang="clojure">d/datoms</code> flows as following:</p>
+
+<ol>
+  <li>Pass the datomic db whose indexes we want to look up.</li>
+  <li>Pass the index to use. We want the <code data-lang="clojure">:avet</code> index. (Attribute, value, entity, transaction)
+    <ul><li>The following arguments are the <em>components</em> to look up in the index.</li></ul>
+  </li>
+  <li>The first entry in <code data-lang="clojure">:avet</code> is <code data-lang="clojure">:a</code>. So we pass <code data-lang="clojure">:attendant/public-id</code>, the attribute we want to look up.</li>
+  <li>The second entry in <code data-lang="clojure">:avet</code> is <code data-lang="clojure">:v</code>. So we pass <code data-lang="clojure">public-id</code>, the value we want to look up.</li>
+</ol>
+
+<p>This will give us a raw seq of facts. Since we know that the attribute <code data-lang="clojure">:attendant/public-id</code> is set to unique, we can just get the <code data-lang="clojure">(first)</code> one.</p>
+
+<p>Note: We could also just have passed one component, the attribute, and gotten back a sequence of facts for all facts for that attribute.</p>
+
+<p>When we have our fact, we extract the entity ID from it. The fact is map-like, so all we need to do is <code data-lang="clojure">(:e fact)</code>.</p>
+
+<p>Then we proceed as normal, and look up the full aggregated entity just as we do with the entity IDs we get from Datomic query results.</p>
+
