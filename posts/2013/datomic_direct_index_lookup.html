@@ -5,7 +5,7 @@ title: Datomic: Direct index lookup
 
 <p>A couple of years ago, I read about someone whose MySQL performance bottleneck was SQL parsing. Most of the queries were straightforward primary key lookups, so the author wrote code that called InnoDB (one of MySQL's storage engines) directly and removed the bottleneck. I thought this was really cool, and I feel like I've reached a small milestone today for doing the same thing myself, only in Datomic.</p>
 
-<p>What can we do when we're in a simluar situation in Datomic? Wen the limiting factor is the speed of the query engine, and the query is a pretty simple lookup?</p>
+<p>What can we do when the limiting factor is the speed of the query engine, and the query is a pretty simple lookup?</p>
 
 <p>The answer is: Direct index lookup.</p>
 
