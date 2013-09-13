@@ -34,7 +34,7 @@ title: Datomic: Direct index lookup
 <pre><code data-lang="clojure">;; Yields exactly the same output as the above query
 (map
   (fn [public-id]
-    (->> (d/datoms db :avet :attendant/public-id public-id)
+    (->> (d/datoms db :avet :product/public-id public-id)
       (first)
       :e
        (d/entity db)))
