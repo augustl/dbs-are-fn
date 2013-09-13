@@ -37,7 +37,7 @@ title: Datomic: Direct index lookup
     (->> (d/datoms db :avet :product/public-id public-id)
       (first)
       :e
-       (d/entity db)))
+      (d/entity db)))
   public-ids)
 </code></pre>
 
