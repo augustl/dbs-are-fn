@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:dbs-are-fn.com:feed</id>
+  <updated><%= @posts[0].timestamp.iso8601(0) %></updated>
+  <title type="text">DBs are fn!</title>
+  <link href="http://dbs-are-fn.com/atom.xml" rel="self"/>
+  <% @posts.each do |post| %>
+    <entry>
+      <title><%= Post.escape_html(post.title) %></title>
+      <updated><%= post.timestamp.iso8601(0) %></updated>
+      <author>
+        <name>August Lilleaas</name>
+      </author>
+      <link href="http://dbs-are-fn.com<%= post.url %>" />
+      <id>urn:augustl-com:feed:post:<%= post.id %></id>
+      <content type="html"><%= Post.escape_html(post.body) %></content>
+    </entry>
+  <% end %>
+</feed>

@@ -11,6 +11,10 @@ page "/" do
   @posts = Post.all_listed
 end
 
+page "/atom.xml", :layout => false do
+  @posts = Post.all_listed[0..9]
+end
+
 # helpers do
 #   def some_helper
 #     "Helping"
