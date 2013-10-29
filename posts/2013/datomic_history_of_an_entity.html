@@ -100,7 +100,7 @@ title: Datomic: History of an entity
     [?e ?a _ ?tx]]
   (d/history db)
   (:db/id user))
- ;; We group the tuples by tx - a tx single can and will contain multiple
+ ;; We group the tuples by tx - a single tx can and will contain multiple
  ;; attribute changes.
  (group-by (fn [[tx attr]] tx))
  ;; We only want the actual changes
