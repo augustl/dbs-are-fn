@@ -1,0 +1,108 @@
+date: 2013.10.31
+title: Interviewing Greg Young about Event Store
+
+<p><a href="http://geteventstore.com">Event Store</a> touts itself as a functional database, which naturally got me interested. It's good to see that Datomic isn't the only functional database around. In this interview, we explore what Event Store is, we'll take a deep dive into the querying, the CAP properties of Event Store, and more.</p>
+
+<p>Greg Young is the lead architect and designer for Event Store, and a partner in the company dubbed Event Store LLP that provides commercial support for the database.</p>
+
+<p>A huge thanks to Greg Young for taking the time to answer my questions!</p>
+
+
+<h2>Q: For the uninitiated, what kind of database is Event Store?</h2>
+
+<p>Event Store is a domain specific database for people that are using event sourcing. At its core it can be considered a topic based pub/sub that also has a history associated with it. It does as we will discuss later have many other uses.</p>
+
+<h2>Q: What is Event Store's definition of a functional database?</h2>
+
+<p>Let's try a different approach on this. An Event is a serialized function, it has a name and parameters associated with it:</p>
+
+<pre><code data-lang="javascript">
+Fooed {
+    who : "greg",
+    howmany : 17
+}
+</code></pre>
+
+<p>Events aka Facts can only ever be appended to the system and are immutable. Any concept of current state is defined by mapping the body of a pure function (state, event) => state to the event and then left-folding across the history.</p>
+
+<h2>Q: What kind of data can you associate with an event?</h2>
+
+<p>An event is defined internally as a byte array you can possibly use any serialization format that you see fit. That said most people today are using xml, json, or bson. As such you can associate any arbitrary properties to an event. In practice however most people would not want to get too fancy and keep it as multi-level key values.</p>
+
+<h2>Q: What kind of querying capabilities does Event Store offer?</h2>
+
+<p>This is a very large topic and I cannot do it justice within just a few paragraphs. I would highly recommend people to watch this video which discusses in a bit further detail <a href="http://skillsmatter.com/podcast/design-architecture/event-store-as-a-read-model">http://skillsmatter.com/podcast/design-architecture/event-store-as-a-read-model</a></p>
+
+<p>The event store has an entire query model for querying over event streams or doing Complex Event Processing. The language is actually JavaScript. The language is functional in its nature. Queries can run either through history and stop or run as continuous queries into the future..</p>
+
+<p>One of the main benefits of having chose JavaScript that people are already familiar with it. There is also a large ecosystem around JavaScript as an example if you have a query that fails you can debug it inside of chrome <a href="http://geteventstore.com/blog/20121225/debugging-support/">http://geteventstore.com/blog/20121225/debugging-support/</a>. There are also a large number of libraries that can be leveraged in projections such as brain.js for machine learning.</p>
+
+<p>The query language is very good at a specific problem which is temporal correlation queries. We have from the beginning of our project considered the following use case. I as a Doctor want to find patients for a clinical trial. I am looking for patients that were diagnosed with pancreatic cancer within the last 6 months. Within 1 week of diagnosis they were placed on treatment T1 and were given the treatment more than 3 times but less than 7 within a 3 week period. They then failed the treatment with a lab result that looks like R1. They were then placed on a treatment T2 within two weeks and failed with a lab result that looked like R2.</p>
+
+<p>Not only can this query be easily expressed and run, it will also continue running notifying the doctor in the future of patients that meet the criteria for the trial in the future. In fact the results of any query is just another stream (which happens to be published as an atom feed itself).</p>
+
+<p>The language will feel quite comfortable to anyone that has worked with Complex Event Processing before, the main difference is that you can also use it in the past (queries go to the oldest event in history and come forward). Another major difference compared to CEP is that normally in CEP you bring the events to the processor (say over a network).. As we have embedded the language into the database we instead bring the query to where the events are. This is quite useful when dealing with large numbers of events for a partitioned query as we will also automatically parallelize and distribute your query (including multiple nodes).</p>
+
+<p>If you are writing queries the Event Store will also handle making any queries you run (including parallel queries) highly available and/or distributed for you, it will also handle automatic indexing of many queries to speed them up. You do not need to think about such things.</p>
+
+<p>Let's try a simple query. I want to count the number of events in the system (this is actually a really bad way of getting to this answer btw)</p>
+
+<pre><code data-lang="javascript">
+fromAll().
+    when({
+        $init: function(s,e) { return 0;},
+        $any : function(s,e) { return s + 1;}
+    })
+</code></pre>
+
+The start fromAll() is a selector, it is saying to select all of the events in the system. Other selectors include fromStream, fromStreams (aka join), fromCategory, fromStreamsMatching(function). The next part of the query is a pattern match. As mentioned an event is really just a function call. The pattern match maps the event back to an actual function. Internally a left-fold is performed calling through the defined functions.
+
+Many times however you want to have many folds happening. The query above with patients is an example of this, you would want a state per patient. The querying model also supports these kinds of queries. Another simpler example of this would be summing up the balance of bank accounts in a bank.
+
+<pre><code data-lang="javascript">
+fromCategory('account').
+    foreachStream().
+        when({
+            $init : function(s,e) {
+                return {balance : 0};
+            },
+            DebitOccured : function(s,e) {
+                return {balance : s.balance - e.amount};
+            },
+            CreditOccured : function(s,e) {
+                return {balance : s.balance + e.amount};
+            }
+        });
+</code></pre>
+
+<p>This query will fold through each account independently. This operation is also parallelizable. If you have 5 machines running 4 projection threads each you will have 20 threads working on this concurrently.</p>
+
+<p>As I said earlier this is just the tip of the iceberg on what can be done with the querying library. It has been in production use for about a year and will be leaving beta in q4 of this year.</p>
+
+<h2>Q: Is Event Store ACID? Eventually consistent? Highly write available?</h2>
+
+<p>Event Store for writing is a CP system in terms of CAP theorem. It is fully ACID compliant. High Availability is provided in that all writes are assured to be fsynced to a majority of disks within the quorum. If you prefer availability to consistency this is very easy to handle in the model as you just have clients cache locally their events if they can not reach the Event Store and have them push them later.</p>
+
+<p>Your read models that you would setup on the outside (say sqlserver and neo4j) would be eventually consistent as they would be listening to their streams and updating their local models asynchronously.</p>
+
+
+<h2>Q: Is Event Store relational? Can events refer to other events?</h2>
+
+<p>Events can refer to other events only through soft links. With two exceptions that are used internally. The first of these is a link event, this event is a pointer at another event and is often used in repartitioning of event streams. The second of these is a stream link which is a pointer to another stream and often used in conjunction with parallel queries.</p>
+
+<h2>Q: Can you atomically write a set of events? For example, a set containing an event representing an order plus additional events for each of the line items.</h2>
+
+<p>Sure without any issue. We support going way past this to long running transactions as well. You can for instance start a transaction, write an event, wait 3 minutes, write an event, then commit without any issue. There has also been support built on top of Event Store to even support distributed transactions with other data stores.</p>
+
+
+<h2>Q: Does Event Store have traditional event sourcing snapshots, or can you get the value of the database as of any point in time?</h2>
+
+<p>Snapshots for say your domain model can easily be supported in the Event Store but we do not do it internally (we look at the world solely as a series of facts not as structure datomic is slightly different in this way). Most people do snapshots in the following way: at some interval they will take a snapshot of a given stream and write into another stream called givenstream-snapshot-domain, it will include the sequence of the event that it applies to. On read they will read the snapshot stream first then read forward the event stream from that point.</p>
+
+<p>That said state inside of queries is automatically snapshotted and checkpointed internally.</p>
+
+<h2>Q: Can you remove data from storage in any way, for privacy, safety or regularory reasons? For example, delete data older than 3 months, or only keep the latest encrypted password.</h2>
+
+<p>Absolutely, we understand the real need to delete user data in today's modern regulatory environment. We offer many options for deleting data. You can set on any stream a maximum age or count. You can also explicitly truncate a stream all events prior to event X. You can even fully delete a stream. The one operation we do not allow you to do is to delete an event as this would drastically affect cacheability (what if an intermediary proxy still has it?).</p>
+
+<p>Another operation we do not allow is an update of an event. There is in fact not even an API operation that will allow you to do this. This again is focused on cacheability but also has roots in the complexity it would pose on the query model.</p>
