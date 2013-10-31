@@ -75,6 +75,13 @@ pre, p code, ul code, ol code, pre code {
     background-color: #eee;
 }
 
+.interview-q {
+    font-size: 1em;
+}
+
+.interview-q:before {
+    content: "Q: ";
+}
 
 .highlight .c,
 .highlight .c1 {  /* Comments */
