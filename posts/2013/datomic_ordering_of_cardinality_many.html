@@ -1,0 +1,148 @@
+date: 2013.10.31
+title: Datomic: Ordering of <code>:db.cardinality/many</code> attributes
+listed: false
+
+<p class="originally-published">Originally published 2013-05-04, at <a href="http://augustl.com/blog/2013/ordering_cardinality_many_in_datomic/">my personal blog</a>. Edited and optimized.</p>
+
+<p>In this post, I demonstrate a strategy to achieve ordering of one-to-many associations in Datomic</p>
+
+<h2>Datomic and cardinality</h2>
+
+<p>In Datomic, the only thing you can add to your database are facts. Examples of facts are "Joe's e-mail is now X", "Order 14's line items is now Y" and "Project 52's todos no longer include Todo item 41". The schema defines the cardinality of such facts, so that when you ask the database for the value of joe's e-mail or order 14's line items, you get either a single item, or a set of items, depending on the cardinality of that attribute. For the facts above, we can assume that email is cardinality one, while line items and todos is cardinality many.</p>
+
+<p>This makes lists very convenient to create in Datomic. You don't have to create extra join tables, all you need to do is to specify the cardinality of the attributes in your schema. Then the indexing jobs will ensure that the indexes give you either you the single most recent value, or a set of all values as a sum of all add and retract operations over time.</p>
+
+<p>In traditional table based databases, programmers can rely on unspecified sorting in queries returning results in insertion order. Datomic uses tree structures to represent values, which has no insertion order, will get rebalanced, and so on. So Datomic will give you the "cardinality many" attributes as a unordered set.</p>
+
+<p>Let's investigate what we can do in order to somehow get ordering anyway.</p>
+
+<h2>Order by some kind of natural built-in value</h2>
+
+<p>If your cardinality many attribute is a ref, you can actually get insertion order. Datomic entity IDs guarantees that if an entity's ID is larger than another entity's ID, the former entity was inserted after the latter.</p>
+
+<pre><code data-lang="clojure">(sort-by :order/created-at (:user/orders my-user))</code></pre>
+
+<p>If your attribute is a date, a string, a number, or something else, you can of course sort alphabetically, by date, and so on.</p>
+
+<pre><code data-lang="clojure">(sort-by :todo-item/completed (:project/todos my-project))</code></pre>
+
+<p>Note that we do the sorting in Clojure code. Haven't we learned to specify the order when performing our queries? Not with Datomic. Since our queries and our database is available to us in the client itself (that's how Datomic works, after all), we just do the sorting on our client as well.</p>
+
+<h2>Our problem: Manual sorting through user interface</h2>
+
+<p>What if we want something like a user interface where the user manually specifies the ordering of our items? Sorting by entity IDs or dates won't suffice. We need to store the position the user chose in our database.</p>
+
+<p>We'll need to cover three important use cases. The first is to add a new item to the list, and have it appear at the end of the list. The second is to remove an item from the list and ensure there are no gaps in it. The third is to update the positions based on drag & drop sorting by the user.</p>
+
+<h2>Adding an item to the end of the list</h2>
+
+<p>In order to consistently be able to add something to the end of the list, we need a transaction function. It is unsafe (risk of inconsitencies) if we read out the currently highest value on the peer and increment it by one - there might be other peers that adds to the list, and the order gets out of sync.</p>
+
+<p>This transaction function takes the entity ID and the cardinality many attr for which we want to add an item. We also need the entity ID for the new item, and the attribute where the numeric position is stored.</p>
+
+<pre><code data-lang="clojure">{:db/id #db/id[:db.part/user]
+ :db/ident :append-position-in-scope
+ :db/doc "Atomically adds to the end of a list of sorted cardinality/many lists"
+ :db/fn #db/fn {:lang "clojure"
+                :params [db scope-id scope-attr new-id pos-attr]
+                :code [[:db/add new-id pos-attr
+                        (->>
+                         ;; The full set of children
+                         (scope-attr (datomic.api/entity db scope-id))
+                         ;; Get only the numerical position attr
+                         (map pos-attr)
+                         ;; Get the highest one
+                         (reduce max 0)
+                         ;; And increment by one
+                         (inc))]]}}
+</code></pre>
+
+<p>Assuming we have a todo-list with todo-items and we want to consistently add an item to the bottom of the todo-list, we can do this:</p>
+
+<pre><code data-lang="clojure">(d/transact
+  [[:db/add todolist-id :todolist/todoitems todoitem-tempid]
+   [:db/add todoitem-tempid :todoitem/text "Remember the milk"]
+   [:append-position-in-scope
+    todolist-id
+    :todolist/todoitems
+    todoitem-tempid
+    :todoitem/position]])</code></pre>
+
+<p>The transaciton function will get the currently higest positioned todo item, and return a fact where we set the position of the new todo item to the <code data-lang="clojure">(inc)</code> of the currently higest item.</p>
+
+<h2>Removing an arbitrary item from the list</h2>
+
+<p>Let's say we delete item 3 from the todo-list. In that case, we want to ensure that the manual list of position attributes doesn't have a gap in it. Having a gap is actually probably not a big deal, but it's a bit unclean, it's nicer to ensure there are no gaps.</p>
+
+<p>Another transaction function is used for this.</p>
+
+<pre><code data-lang="clojure">{:db/id #db/id[:db.part/user]
+ :db/ident :reset-position-in-scope
+ :db/doc "Goes through existing positions and sequentializes them, assuming
+          retracted-eid is being retracted from the list"
+ :db/fn #db/fn {:lang "clojure"
+                :params [db scope-id scope-attr retracted-eid sorted-attr]
+                :code (map-indexed
+                       (fn [idx entity-id]
+                         [:db/add entity-id sorted-attr idx])
+                       (->>
+                        ;; The full set of children
+                        (scope-attr (datomic.api/entity db scope-id))
+                        ;; Sort them by the numerical sorted-attr
+                        (sort-by sorted-attr)
+                        ;; Get the entity IDs
+                        (map :db/id)
+                        ;; Remove the retracted entity from the list
+                        (filter (partial not= retracted-eid))))}}</code></pre>
+
+<p>Here's an example use of it, where we remove an arbitrary todo-item from the list.</p>
+
+<pre><code data-lang="clojure">(d/transact
+  [[:db.fn/retractEntity todoitem-id]
+   [:reset-position-in-scope
+    todolist-id
+    :todolist/todoitems
+    todoitem-id
+    :todoitem/position]])</code></pre>
+
+<p>Note that the transaction function itself assumes the todoitem will be retracted elsewhere. It's up to the reader to decide whether reset-position-in-scope shoul also do the retraction, to ensure lazy programmers can't accidentally cause duplicated positions by forgetting to retract the entity we're removing.</p>
+
+<h2>Sorting the list</h2>
+
+<p>When the user sorts the full list, we don't really need to do anything special. The most common way to implement something like this, is to send the full list of items and their positions to the server, and simply set the position based on what the user interface ships to the server.</p>
+
+<p>When the user sorts the full list, we have the user interface post an array of datomic entity IDs to us. We assume this sorted array represents our positions, and transact in the new data.</p>
+
+<pre><code data-lang="clojure">(d/transact
+  (map
+   (fn [todoitem]
+     [:db/add (:eid todoitem) :todoitem/position (:position todoitem)])
+   (:todoitems request-params)))</code></pre>
+
+<p>This approach is too naive, though. If there's a race condition, it's possible that an item was added to the list by the time the transaction is processed. We'll end up with duplicate positions.</p>
+
+<pre><code data-lang="clojure">{:db/id #db/id[:db.part/user]
+ :db/ident :set-position-in-scope
+ :db/doc "Reposition consistently"
+ :db/fn #db/fn {:lang "clojure"
+                :params [db scope-id scope-attr sorted-eids sorted-attr]
+                :code (map-indexed
+                       (fn [idx entity-id]
+                         [:db/add entity-id sorted-attr idx])
+                       (concat
+                        sorted-eids
+                        (clojure.set/difference
+                         (map :db/id (scope-attr (datomic.api/entity db scope-id)))
+                         sorted-eids)))}}</code></pre>
+
+<p>This function takes the list that the user interface provided, and sorts accordingly.</p>
+
+<pre><code data-lang="clojure">(d/transact
+  [[:db.fn/retractEntity todoitem-id]
+   [:set-position-in-scope
+    todolist-id
+    :todolist/todoitems
+    [56 21 92 10]
+    :todoitem/position]])</code></pre>
+
+<p>The implementation is slightly naive still, but at least it is consistent. Any item that is present in the database but that is not present in our vector of entity IDs will be added to the end of the list. We could improve it by interleaving so that if we posted a vector with 5 items, and the item already existing in the database was at position 3, we could add the existing item around position 3.</p>
