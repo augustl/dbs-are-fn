@@ -1,6 +1,5 @@
 body {
-    width: 700px;
-    margin: 0 auto;
+    margin: 0;
     font-family: Helvetica, sans-serif;
     line-height: 1.5;
 }
@@ -15,8 +14,28 @@ h1 {
 }
 
 .header-block {
-    border-bottom: 2px solid #ccc;
-    padding-bottom: 10px;
+    background: #ccc;
+    border-bottom: 2px solid #999;
+}
+
+.header-block a {
+    color: #336699;
+}
+
+.content-block {
+    width: 700px;
+    margin: 0 auto;
+}
+
+ul.inline-list {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+}
+
+ul.inline-list li {
+    display: inline-block;
+    margin-right: 10px;
 }
 
 hr.post-sep {
@@ -25,15 +44,10 @@ hr.post-sep {
     margin: 50px 0;
 }
 
-.header-block p {
-    margin: 0;
-}
-
 .large-header-title-text {
     font-size: 30px;
     font-weight: bold;
     margin-right: .5em;
-    color: #336699;
     text-decoration: none;
 }
 
