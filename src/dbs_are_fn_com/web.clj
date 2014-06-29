@@ -52,6 +52,7 @@
   (layout-page
    (list
     [:h1 (:title headers)]
+    [:p.post-timestamp (:date headers)]
     (get-body))
    (:title headers)))
 
