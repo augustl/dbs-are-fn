@@ -21,8 +21,7 @@
           [:li [:span.titlelol base-title]]
           [:li [:span.logolol "fn(world_state" [:sub "1"] ") -> world_state" [:sub "2"]]]
           [:li [:a {:href "/"} "Home"]]
-          [:li [:a {:href "/about"} "About"]]
-          [:li [:span.sourcelol [:a {:href "https://github.com/augustl/dbs-are-fn.com"} "Blog source code"]]]]]]
+          [:li [:a {:href "/about"} "About"]]]]]
        [:div {:class "site-content site-content-main"} page]])))
 
 (defn get-home-page [posts req]
@@ -35,7 +34,9 @@
         [:a {:href url} (:title headers)]
         " "
         [:span.listing-date pretty-date]])
-     posts))))
+     posts)
+    [:hr]
+    [:p "This blog is served as static HTML, generated using " [:a {:href "https://github.com/magnars/stasis"} "Stasis"] ", a Clojure library. The site is " [:a {:href "https://github.com/augustl/dbs-are-fn.com"} "open source"] "."])))
 
 (defn get-about-page [req]
   (layout-page

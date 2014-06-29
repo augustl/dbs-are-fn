@@ -36,10 +36,6 @@ h1 {
     margin: 0 20px;
 }
 
-.sourcelol {
-    font-size: 12px;
-}
-
 ul.inline-list {
     list-style-type: none;
     margin: 0;
@@ -107,6 +103,12 @@ pre, p code, ul code, ol code, pre code {
 
 .interview-q:before {
     content: "Q: ";
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 50px 0;
 }
 
 .highlight .c,
