@@ -1,100 +1,66 @@
 body {
-    margin: 0;
-    font-family: Helvetica, sans-serif;
-    line-height: 1.5;
-    font-size: 17px;
+    font-family: Georgia, serif;
 }
 
-html {
-    font-size: 100%;
+.site-title {
+    font-size: 1em;
+    font-weight: bold;
+    display: block;
+    color: #777;
+}
+
+.site-header a {
+    text-decoration: none;
+}
+
+.site-subtitle {
+    font-size: .8em;
+    margin-bottom: .5em;
+    color: #aaa;
+}
+
+.site-header {
+    padding-bottom: .5em;
+    margin-bottom: .5em;
+    border-bottom: 1px solid #eee;
+}
+
+.site-content-main {
+    max-width: 700px;
+    margin: 0 auto;
 }
 
 h1 {
-    font-family: Georgia, serif;
-    line-height: 1.3;
-}
-
-.site-content {
-    margin: 0 1em;
-}
-
-
-.site-header {
-    background-color: #366;
-}
-
-.site-header,
-.site-header a {
-    color: #fff;
-}
-
-.titlelol {
-    font-size: 30px;
-}
-
-.logolol {
-    margin: 0 20px;
-}
-
-ul.inline-list {
-    list-style-type: none;
+    font-size: 4em;
     margin: 0;
     padding: 0;
 }
 
-ul.inline-list li {
-    margin: 0;
-    padding: 0;
-    display: inline;
-    margin-right: 10px;
-}
-
-.listing-date {
-    font-size: .8em;
-    color: #666;
-}
-
-p,
-h2,
-h3,
-h4,
-h5 {
-    max-width: 700px;
-}
-
-.post-timestamp {
-    color: #999;
-    font-size: 12px;
-    margin-bottom: 40px;
-}
-
-.originally-published {
-    padding: 1em;
+.post-timestamp, .listing-date {
     color: #666;
     font-style: italic;
+    font-size: .8em;
 }
 
-pre, code, .logolol {
-    font-family: "Inconsolata", "Monaco", "Lucida Console", monospace;
+.listed-post {
+    margin: 2em;
 }
 
-code, tt {
-    white-space: nowrap;
+p {
+    line-height: 1.4;
+}
+
+pre {
+    margin: 3em 0;
+}
+
+pre, code {
+    font-family: courier, monospace;
+    font-size: .9em;
 }
 
 pre code {
     white-space: pre;
-}
-
-pre {
-    border:2px solid #ddd;
-    padding: 1em;
-    overflow: hidden;
-    display: inline-block;
-}
-
-pre, p code, ul code, ol code, pre code {
-    background-color: #eee;
 }
 
 .interview-q {
@@ -103,12 +69,6 @@ pre, p code, ul code, ol code, pre code {
 
 .interview-q:before {
     content: "Q: ";
-}
-
-hr {
-    border: none;
-    border-top: 1px solid #ddd;
-    margin: 50px 0;
 }
 
 .highlight .c,

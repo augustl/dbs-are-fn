@@ -17,43 +17,28 @@
       [:body
        [:div {:class "site-header"}
         [:div {:class "site-content"}
-         [:ul {:class "inline-list"}
-          [:li [:span.titlelol base-title]]
-          [:li [:span.logolol "fn(world_state" [:sub "1"] ") -> world_state" [:sub "2"]]]
-          [:li [:a {:href "/"} "Home"]]
-          [:li [:a {:href "/about"} "About"]]]]]
+         [:a.site-title {:href "/"} base-title]
+         [:a.site-subtitle {:href "/"} "A blog about functional databases"]]]
        [:div {:class "site-content site-content-main"} page]])))
 
 (defn get-home-page [posts req]
   (layout-page
    (list
-    [:p "A blog about functional databases."]
     (map
      (fn [{:keys [url headers pretty-date]}]
-       [:div
+       [:div.listed-post
         [:a {:href url} (:title headers)]
         " "
         [:span.listing-date pretty-date]])
      posts)
-    [:hr]
     [:p "This blog is served as static HTML, generated using " [:a {:href "https://github.com/magnars/stasis"} "Stasis"] ", a Clojure library. The site is " [:a {:href "https://github.com/augustl/dbs-are-fn.com"} "open source"] "."])))
 
-(defn get-about-page [req]
-  (layout-page
-   (list
-    [:p [:strong "DB's are fn"] " is a blog about functional databases, written by " [:a {:href "http://augustl.com"} "August Lilleaas"] "."]
-    [:p "Old data is valuable to many domains. Keeping old data shouldn't be your job."]
-    [:p "We already use version control and log files. Knowing what the world looked like in the past is useful to many domains. But our databases makes it easy to do destructive updates and deletes. If you want to keep around old data, that's your problem."]
-    [:p "A functional database has no destructive updates or deletes. Datomic has a view of the database that doesn't show deleted data, but you can always fetch the database as of two weeks ago. Event Store is append-only and allows you to create views over streams of events so you can go back in time as you please, and query the changes made to your data over time."]
-    [:p "This blog is all about functional database evangelism. Too many developers assume a database " [:em "has"] " to be global mutable state, but this is not the case."])
-   "About"))
-
 (defn layout-post
-  [{:keys [get-body headers]}]
+  [{:keys [get-body headers pretty-date]}]
   (layout-page
    (list
     [:h1 (:title headers)]
-    [:p.post-timestamp (:date headers)]
+    [:p.post-timestamp pretty-date]
     (get-body))
    (:title headers)))
 
@@ -63,6 +48,5 @@
 (defn get-pages []
   (let [posts (post-parser/get-posts "posts")]
     (merge
-     {"/" (partial get-home-page posts)
-      "/about" get-about-page}
+     {"/" (partial get-home-page posts)}
      (into {} (map (fn [post] [(:url post) (fn [req] (layout-post post))]) posts)))))
