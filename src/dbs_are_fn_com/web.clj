@@ -51,7 +51,8 @@
   (assets/load-assets "public" [#".*"]))
 
 (defn get-pages []
-  (let [posts (post-parser/get-posts "posts")]
+  (let [posts (->> (post-parser/get-posts "posts")
+                   (remove #(contains? (:headers %) :unlistable)))]
     (merge
      {"/" (partial get-home-page posts)}
      (into {} (map (fn [post] [(:url post) (fn [req] (layout-post post))]) posts)))))
