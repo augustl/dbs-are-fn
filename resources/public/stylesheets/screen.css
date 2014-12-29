@@ -1,9 +1,64 @@
+.site-title {
+    font-sie: 16px;
+}
+
+.site-subtitle {
+    font-size: 13px;
+}
+
+    .interview-q {
+        font-size: 1em;
+    }
+
+@media (max-width: 500px) {
+    .post-title {
+        font-size: 25px;
+    }
+
+    .post-timestamp, .listing-date {
+        font-size: 12px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    p {
+        font-size: 14px;
+    }
+
+    .post-body pre, .post-body code {
+        font-size: 9px;
+    }
+}
+
+@media (min-width: 501px) {
+    .post-title {
+        font-size: 50px;
+    }
+
+    .post-timestamp, .listing-date {
+        font-size: 14px;
+    }
+
+    h2 {
+        font-size: 35px;
+    }
+
+    p {
+        font-size: 20px;
+    }
+
+    .post-body pre, .post-body code {
+        font-size: 16px;
+    }
+}
+
 body {
     font-family: Georgia, serif;
 }
 
 .site-title {
-    font-size: 16px;
     font-weight: bold;
     display: block;
     color: #777;
@@ -14,7 +69,6 @@ body {
 }
 
 .site-subtitle {
-    font-size: 13px;
     margin-bottom: 10px;
     color: #aaa;
 }
@@ -30,18 +84,17 @@ body {
     color: #fff;
     font-family: Helvetica, sans-serif;
     padding: 20px 0;
-    font-size: 50px;
 }
 
 .site-content {
     max-width: 700px;
     margin: auto;
+    padding: 0 10px;
 }
 
 .post-timestamp, .listing-date {
     color: #666;
     font-style: italic;
-    font-size: 14px;
 }
 
 .listed-post {
@@ -54,7 +107,6 @@ h1 {
 
 h2 {
     font-weight: bold;
-    font-size: 35px;
     margin-bottom: 5px;
 }
 
@@ -64,7 +116,6 @@ h2, h3, h4 {
 
 p {
     line-height: 1.5;
-    font-size: 20px;
     margin-bottom: 25px;
 }
 
@@ -85,16 +136,8 @@ pre, code {
     font-family: courier, monospace;
 }
 
-.post-body pre, .post-body code {
-    font-size: 16px;
-}
-
 pre code {
     white-space: pre;
-}
-
-.interview-q {
-    font-size: 1em;
 }
 
 .interview-q:before {
