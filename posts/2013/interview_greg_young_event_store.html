@@ -55,9 +55,9 @@ fromAll().
     })
 </code></pre>
 
-The start fromAll() is a selector, it is saying to select all of the events in the system. Other selectors include fromStream, fromStreams (aka join), fromCategory, fromStreamsMatching(function). The next part of the query is a pattern match. As mentioned an event is really just a function call. The pattern match maps the event back to an actual function. Internally a left-fold is performed calling through the defined functions.
+<p>The start fromAll() is a selector, it is saying to select all of the events in the system. Other selectors include fromStream, fromStreams (aka join), fromCategory, fromStreamsMatching(function). The next part of the query is a pattern match. As mentioned an event is really just a function call. The pattern match maps the event back to an actual function. Internally a left-fold is performed calling through the defined functions.</p>
 
-Many times however you want to have many folds happening. The query above with patients is an example of this, you would want a state per patient. The querying model also supports these kinds of queries. Another simpler example of this would be summing up the balance of bank accounts in a bank.
+<p>Many times however you want to have many folds happening. The query above with patients is an example of this, you would want a state per patient. The querying model also supports these kinds of queries. Another simpler example of this would be summing up the balance of bank accounts in a bank.</p>
 
 <pre><code data-lang="javascript">
 fromCategory('account').
